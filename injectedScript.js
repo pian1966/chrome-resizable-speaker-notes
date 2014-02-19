@@ -1,25 +1,11 @@
 var oldWindowOpen = window.open;
 var pollInterval;
+var SIDEBAR_INITIAL_WIDTH = 250;
 
 window.open = function(url, name, specs, replace) {
 	var win = oldWindowOpen(url, name, specs, replace);
 
 	if (url == '' && name.match(/^punch_speaker_notes/)) {
-		// pollForSelectors(
-		// 	win.document,
-		// 	[
-		// 		'.punch-viewer-speakernotes-side-panel',
-		// 		'.punch-viewer-speakernotes-page-container',
-		// 		'.punch-viewer-speakernotes-page',
-		// 		'.punch-viewer-speakernotes-page svg',
-		// 		'.punch-viewer-speakernotes-page-previous',
-		// 		'.punch-viewer-speakernotes-page-next',
-		// 		'.punch-viewer-speakernotes-page-next .punch-viewer-speakernotes-page-iframe',
-		// 	],
-		// 	function() {
-		// 		modifyPreview(win)
-		// 	}
-		// );
 		pollForFunction(
 			function() {
 				return win.document != null && win.document.head != null && win.document.body != null;
@@ -37,10 +23,6 @@ function pollForFunction(f, callback) {
 	var interval = setInterval(poll, 1000);
 
 	function poll() {
-		// var someMissing = selectors.some(function(selector) {
-		// 	return document.querySelector(selector) == null;
-		// });
-
 		if (f()) {
 			clearInterval(interval);
 			callback();
@@ -48,13 +30,11 @@ function pollForFunction(f, callback) {
 	}
 }
 
-function getCss() {
-	var sidePanelWidth = 360;
+function getCss(sidePanelWidth) {
 	var sidePanelPadding = 18;
 	var currentPreviewWidth = sidePanelWidth - 2 * sidePanelPadding;
 
 	var directionSpacing = 25;
-	// var directionBorders = 4;
 	var directionWidth = Math.floor((currentPreviewWidth - directionSpacing) / 2);
 
 	var mainCss = {
@@ -102,6 +82,17 @@ function getCss() {
 		'.punch-viewer-speakernotes-timer-main-container': {
 			'display': 'block',
 			'height': 'auto'
+		},
+
+		// Dragger
+		'.sidebar-dragger': {
+			'width': '4px',
+			'height': '100vh',
+			'position': 'absolute',
+			'background-color': '#DFDFDF',
+			'top': 0,
+			'margin-left': '-2px',
+			'cursor': 'col-resize'
 		}
 	};
 
@@ -144,9 +135,37 @@ function cssRulesToString(rules) {
 	return s;
 }
 
-function modifyPreview(win) {
-	var css = getCss();
+function makeResizable(win) {
+	var drag = win.document.createElement('div');
+	drag.classList.add('sidebar-dragger');
+	drag.style.left = SIDEBAR_INITIAL_WIDTH + 'px';
+	win.document.body.appendChild(drag);
 
+	drag.addEventListener('mousedown', mouseDown);
+	win.document.body.addEventListener('mouseup', mouseUp);
+	win.document.body.addEventListener('mousemove', mouseMove);
+
+	var dragging = false;
+
+	function mouseDown(e) {
+		dragging = true;
+		drag.style.left = e.pageX + 'px';
+	}
+
+	function mouseUp(e) {
+		dragging = false;
+		updateCss(win, getCss(drag.offsetLeft));
+	}
+
+	function mouseMove(e) {
+		if (dragging) {
+			e.preventDefault();
+			drag.style.left = e.pageX + 'px';
+		}
+	}
+}
+
+function updateCss(win, css) {
 	var previousIframe = win.document.querySelector('.punch-viewer-speakernotes-page-previous .punch-viewer-speakernotes-page-iframe');
 	var nextIframe = win.document.querySelector('.punch-viewer-speakernotes-page-next .punch-viewer-speakernotes-page-iframe');
 
@@ -164,90 +183,12 @@ function modifyPreview(win) {
 	nextStyle.type = 'text/css';
 	nextStyle.innerHTML = css['direction'];
 	nextIframe.contentDocument.head.appendChild(nextStyle);
-
-	// function expandDirection(directionWidth, element) {
-	// 	var iframe = element.querySelector('.punch-viewer-speakernotes-page-iframe');
-
-	// 	element.style.width = directionWidth + 'px';
-
-	// 	iframe.style.width = directionWidth + 'px';
-	// 	iframe.style.height = height16By9(directionWidth) + 'px';
-
-	// 	var iframeInner = iframe.contentDocument.querySelector('.punch-viewer-speakernotes-page');
-
-	// 	if (iframeInner != null) {
-	// 		var iframeInnerSvg = iframeInner.querySelector('svg');
-
-	// 		iframeInner.style.width = 'auto';
-	// 		iframeInner.style.height = 'auto';
-
-	// 		iframeInnerSvg.style.width = directionWidth + 'px';
-	// 		iframeInnerSvg.style.height = height16By9(directionWidth) + 'px';
-	// 	}
-	// }
 }
 
-// function modifyPreview(win) {
-// 	var sidePanelWidth = 360;
-// 	var sidePanelPadding = 18;
-// 	var currentPreviewWidth = sidePanelWidth - 2 * sidePanelPadding;
-
-// 	var sidePanel = win.document.querySelector('.punch-viewer-speakernotes-side-panel');
-// 	var wrapper1 = win.document.querySelector('.punch-viewer-speakernotes-page-container');
-// 	var wrapper2 = win.document.querySelector('.punch-viewer-speakernotes-page');
-// 	var currentPreview = wrapper2.querySelector('svg');
-
-// 	sidePanel.style.width = sidePanelWidth + 'px';
-
-// 	wrapper1.style.width = 'auto';
-// 	wrapper1.style.height = 'auto';
-
-// 	wrapper2.style.width = 'auto';
-// 	wrapper2.style.height = 'auto';
-
-// 	currentPreview.style.width = currentPreviewWidth + 'px';
-// 	currentPreview.style.height = height16By9(currentPreviewWidth) + 'px';
-
-// 	// Next/previous
-// 	var directionSpacing = 25;
-// 	var directionBorders = 4;
-// 	var directionWidth = Math.floor((currentPreviewWidth - directionSpacing - directionBorders) / 2);
-
-// 	var previous = win.document.querySelector('.punch-viewer-speakernotes-page-previous');
-// 	var next = win.document.querySelector('.punch-viewer-speakernotes-page-next');
-
-// 	expandDirection(directionWidth, previous);
-// 	expandDirection(directionWidth, next);
-
-// 	// Speaker notes body
-
-// 	var bodyPanel = win.document.querySelector('.punch-viewer-speakernotes-main-panel');
-// 	var bodyText = win.document.querySelector('.punch-viewer-speakernotes-text-body-scrollable');
-
-// 	bodyPanel.style.position = 'relative';
-// 	bodyText.style.left = '0';
-
-// 	function expandDirection(directionWidth, element) {
-// 		var iframe = element.querySelector('.punch-viewer-speakernotes-page-iframe');
-
-// 		element.style.width = directionWidth + 'px';
-
-// 		iframe.style.width = directionWidth + 'px';
-// 		iframe.style.height = height16By9(directionWidth) + 'px';
-
-// 		var iframeInner = iframe.contentDocument.querySelector('.punch-viewer-speakernotes-page');
-
-// 		if (iframeInner != null) {
-// 			var iframeInnerSvg = iframeInner.querySelector('svg');
-
-// 			iframeInner.style.width = 'auto';
-// 			iframeInner.style.height = 'auto';
-
-// 			iframeInnerSvg.style.width = directionWidth + 'px';
-// 			iframeInnerSvg.style.height = height16By9(directionWidth) + 'px';
-// 		}
-// 	}
-// }
+function modifyPreview(win) {
+	makeResizable(win);
+	updateCss(win, getCss(SIDEBAR_INITIAL_WIDTH));
+}
 
 function height16By9(width) {
 	return Math.round(width * 9 / 16)

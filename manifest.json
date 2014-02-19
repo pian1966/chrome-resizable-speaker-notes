@@ -1,0 +1,13 @@
+{
+	"name": "Presentation Notes Ginormous Preview",
+	"description": "Make the sidebar resizable in Google Slides when presenting with speaker notes so that you can see larger previews.",
+	"manifest_version": 2,
+	"version": "1.0",
+	"content_scripts": [
+		{
+			"matches": ["https://docs.google.com/presentation/*"],
+			"js": ["contentScript.js"]
+		}
+	],
+	"web_accessible_resources": ["injectedScript.js"]
+}

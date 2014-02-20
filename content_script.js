@@ -7,4 +7,4 @@ function injectScript(script) {
 	document.head.appendChild(s);
 }
 
-injectScript('injectedScript.js');
+injectScript('injected_script.js');

@@ -23,8 +23,8 @@ window.open = function(url, name, specs, replace) {
 };
 
 function pollForPredicate(p, callback) {
-	var interval = setInterval(poll, 1000);
-
+	var interval = setInterval(poll, 15000);
+// Changed the interval from 1000 to 15000 to allow for slow internet speeds and low spec computers in places such as South Africa where I live
 	function poll() {
 		if (p()) {
 			clearInterval(interval);
